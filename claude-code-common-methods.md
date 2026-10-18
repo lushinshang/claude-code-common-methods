@@ -61,7 +61,7 @@ sources:
 - 出錯時貼整段錯誤訊息，再加一句：`fix it and verify the build succeeds. address the root cause, don't suppress the error`（中文也行：修好它、確認 build 會過、修根本原因，不要把錯誤藏起來）。只說「build 壞了」，它得自己到處找。
 - 要碰 GitHub 就裝好 `gh`。CLI 工具是跟外部服務互動最省 context 的方式。
 
-提示本身也要說具體。官方在 Best practices 列了四種改寫方向：
+prompt 本身也要說具體。官方在 Best practices 列了四種改寫方向：
 
 | 做法 | 含糊的說法 | 具體的說法 |
 |---|---|---|
@@ -251,7 +251,7 @@ Claude 做到一半，你發現方向不對；或它已經改壞了；或同一�
 - **換一件不相關的事之前，`/clear`。** 官方把「一個 session 裡做 A、順口問 B、再回去做 A」叫作 kitchen sink session，也就是什麼都往裡塞的 session，context 裡塞滿用不到的東西。
 - **快滿時，自己決定留什麼。** Claude Code 接近上限時會自動壓縮，你也可以先出手：`/compact focus on the API changes`，摘要就會保留你指定的重點。要壓縮一半，用 `/rewind` 選一則訊息，再選 Summarize from here 或 Summarize up to here。想調整自動壓縮的時機，用 `/autocompact 500k` 這類寫法設定 context 填到多滿才觸發；這個值會存進 user settings，之後所有專案都生效。
 - **問小事，用 `/btw`。** 例如 `/btw what was the name of that config file again?`。這一問一答不會進入對話歷史，所以不佔空間；Claude 還在工作時也能問，且不會打斷它。它沒有任何工具，只能回答對話裡已經有的東西，不能讀檔或跑指令；要它去查新的東西，改用 subagent。
-- **大量閱讀，交給 subagent。** 在要求前面加一句：`Use subagents to investigate how our authentication system handles token refresh, and whether we have any existing OAuth utilities I should reuse.` subagent 在自己獨立的 context window 裡讀檔，讀完只把摘要帶回來，主對話留給真正要改的部分。調查前先限定範圍，否則 Claude 可能讀上百個檔案把 context 塞滿，官方把這叫作無止境的探索。
+- **大量閱讀，交給 subagent。** 在要求前面加一句：`Use subagents to investigate how our authentication system handles token refresh, and whether we have any existing OAuth utilities I should reuse.` subagent 在自己獨立的 context window 裡讀檔，讀完只把摘要帶回來，主對話留給真正要改的部分。調查前先限定範圍，否則 Claude 可能讀上百個檔案把 context 塞滿，官方把這叫作沒限定範圍的調查（unscoped investigation）。
 - **一件事一個對話，並且命名。** 工作會橫跨好幾天時，用 `/rename oauth-migration` 取個看得懂的名字。隔天用 `claude --continue` 接回最近一個對話，或 `claude --resume` 開選單挑。官方的比喻是把每個名字當成一條分支：每條工作線有自己持續的 context。
 
 壓縮之後，哪些東西還在？[context-window 頁](https://code.claude.com/docs/en/context-window)有一張完整的表，整理成下圖：

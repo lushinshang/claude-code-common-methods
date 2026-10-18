@@ -14,7 +14,7 @@
 |------|------|
 | `claude-code-common-methods.md` | 導讀正文（Markdown） |
 | `index.html` | 單檔網頁版，瀏覽器直接開啟即可閱讀（不依賴外部函式庫） |
-| `images/web/` | 導讀配圖（WebP）：hero 僅 16:9（圖內無字）；fig0–fig6 各有 16:9 與 9:16 兩版，手機自動切換 |
+| `images/web/` | 導讀配圖（WebP）：hero 僅 16:9（圖內無字）；fig0–fig7 各有 16:9 與 9:16 兩版，手機自動切換 |
 | `images/og.png` | 分享預覽圖（由 hero 置中裁切，1200×630） |
 | `share_post.md` | 社群（LINE）分享文 |
 | `README.md` | 本檔 |
