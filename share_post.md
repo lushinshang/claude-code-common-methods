@@ -9,6 +9,6 @@
 ・對話變長：/compact、/btw 和 subagent 管好 context
 ・常做的事：寫成 skill、hook，或用 claude -p 批次跑
 
-每個情境都有可複製的指令和常見踩坑，指令與旗標都用腳本對過官方文件。最後一節我拿自己的使用紀錄對照：CLAUDE.md 寫到 638 行、/goal 多半沒寫終點，看完當天就改了。
+每個情境都有可複製的指令和常見踩坑，指令與旗標都用腳本對過官方文件。最後一節是我自己多做的幾招：驗收指令先拿壞輸入試過、/goal 條件用模板寫、Stop hook 驗證關卡，連同我踩到的坑一起分享。
 
 完整導讀：https://lushinshang.github.io/claude-code-common-methods/
