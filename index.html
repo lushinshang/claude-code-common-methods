@@ -120,7 +120,8 @@ th:first-child,td:first-child{min-width:5.5em}
 </header>
 <main id="main"><article>
 <figure class="section-figure hero-figure"><img src="images/web/hero_16x9.webp" alt="" loading="eager"></figure>
-<p>官方 <a href="https://code.claude.com/docs/en/best-practices" target="_blank" rel="noopener noreferrer">Best practices</a> 開頭就點明：大部分建議都來自同一個限制，Claude 的 context window 會很快填滿，而且越滿，表現越差。一次除錯或一次程式庫探索，就可能吃掉數萬個 token。context 裡裝著整段對話、每個讀過的檔案、每次指令的輸出，滿了以後 Claude 會開始「忘記」前面的指示，錯誤也變多。</p>
+<p>官方 <a href="https://code.claude.com/docs/en/best-practices" target="_blank" rel="noopener noreferrer">Best practices</a> 開頭就點明：大部分建議都來自同一個限制，Claude 的 context window 會很快填滿，而且越滿，表現越差。一次除錯或一次程式庫探索，就可能吃掉數萬個 token。context window 可以想成 Claude 一次看得到的全部內容：你說過的話、每個讀過的檔案、每次指令的輸出，都塞在裡面。容量有限，滿了以後 Claude 會開始「忘記」前面的指示，錯誤也變多。token 是計算這個容量的單位。</p>
+<figure class="section-figure"><picture><source media="(max-width: 640px)" srcset="images/web/fig7_9x16.webp"><img src="images/web/fig7_16x9.webp" alt="context window 像一個會被慢慢裝滿的容器：還有空間時回答穩定，快滿了就容易漏規則、重複犯錯" loading="lazy" tabindex="0" role="button" aria-label="放大圖片：context window 像一個會被慢慢裝滿的容器：還有空間時回答穩定，快滿了就容易漏規則、重複犯錯"></picture><figcaption>context window 像一個會被慢慢裝滿的容器。</figcaption></figure>
 <p>這句話解釋了不少日常現象：聊久了它變笨、同一個錯糾正三次還是錯、規則寫了它偏偏漏掉一條。官方最佳實踐的第一節還有另一個提示：給 Claude 一個它自己能跑的檢查，你就不必一直盯著它。</p>
 <p>本文把常用方法依你實際的工作順序整理成六個情境：開工、動手前、做的時候、走歪了、對話變長、常做的事想交出去。每個情境告訴你什麼時候用、怎麼打、哪裡容易踩坑。事實與指令以官方文件為準，文中附連結；沒特別註明的建議，都出自文末列出的官方文件。EP431 影片的說法只用來決定取材順序，引用時會標明。</p>
 <figure class="section-figure"><picture><source media="(max-width: 640px)" srcset="images/web/fig0_9x16.webp"><img src="images/web/fig0_16x9.webp" alt="六個情境與對應的方法關鍵字，由左到右依工作順序排列" loading="lazy" tabindex="0" role="button" aria-label="放大圖片：六個情境與對應的方法關鍵字，由左到右依工作順序排列"></picture><figcaption>六個情境，依你實際的工作順序排列。</figcaption></figure>
@@ -219,10 +220,10 @@ Keep interviewing until we&#x27;ve covered everything, then write a complete spe
 <p>對話拉長之後，Claude 開始漏掉先前講過的事；或你只是想問個小問題，不想把它塞進主對話。</p>
 <h3>怎麼打</h3>
 <p>先看現況。<code>/context</code> 會用分類的方式顯示目前用量，並給出最佳化建議，包括哪些 CLAUDE.md 與 auto memory 檔案有載入。再決定怎麼收。</p>
-<ul><li><strong>換一件不相關的事之前，<code>/clear</code>。</strong> 官方把「一個 session 裡做 A、順口問 B、再回去做 A」叫作廚房水槽式的 session，context 裡塞滿用不到的東西。</li><li><strong>快滿時，自己決定留什麼。</strong> Claude Code 接近上限時會自動壓縮，你也可以先出手：<code>/compact focus on the API changes</code>，摘要就會保留你指定的重點。要壓縮一半，用 <code>/rewind</code> 選一則訊息，再選 Summarize from here 或 Summarize up to here。想調整自動壓縮的時機，用 <code>/autocompact 500k</code> 這類寫法設定 context 填到多滿才觸發；這個值會存進 user settings，之後所有專案都生效。</li><li><strong>問小事，用 <code>/btw</code>。</strong> 例如 <code>/btw what was the name of that config file again?</code>。這一問一答不會進入對話歷史，所以不佔空間；Claude 還在工作時也能問，且不會打斷它。它沒有任何工具，只能回答對話裡已經有的東西，不能讀檔或跑指令；要它去查新的東西，改用 subagent。</li><li><strong>大量閱讀，交給 subagent。</strong> 在要求前面加一句：<code>Use subagents to investigate how our authentication system handles token refresh, and whether we have any existing OAuth utilities I should reuse.</code> subagent 在自己獨立的 context window 裡讀檔，讀完只把摘要帶回來，主對話留給真正要改的部分。調查前先限定範圍，否則 Claude 可能讀上百個檔案把 context 塞滿，官方把這叫作無止境的探索。</li><li><strong>一件事一個對話，並且命名。</strong> 工作會橫跨好幾天時，用 <code>/rename oauth-migration</code> 取個看得懂的名字。隔天用 <code>claude --continue</code> 接回最近一個對話，或 <code>claude --resume</code> 開選單挑。官方的比喻是把每個名字當成一條分支：每條工作線有自己持續的 context。</li></ul>
+<ul><li><strong>換一件不相關的事之前，<code>/clear</code>。</strong> 官方把「一個 session 裡做 A、順口問 B、再回去做 A」叫作 kitchen sink session，也就是什麼都往裡塞的 session，context 裡塞滿用不到的東西。</li><li><strong>快滿時，自己決定留什麼。</strong> Claude Code 接近上限時會自動壓縮，你也可以先出手：<code>/compact focus on the API changes</code>，摘要就會保留你指定的重點。要壓縮一半，用 <code>/rewind</code> 選一則訊息，再選 Summarize from here 或 Summarize up to here。想調整自動壓縮的時機，用 <code>/autocompact 500k</code> 這類寫法設定 context 填到多滿才觸發；這個值會存進 user settings，之後所有專案都生效。</li><li><strong>問小事，用 <code>/btw</code>。</strong> 例如 <code>/btw what was the name of that config file again?</code>。這一問一答不會進入對話歷史，所以不佔空間；Claude 還在工作時也能問，且不會打斷它。它沒有任何工具，只能回答對話裡已經有的東西，不能讀檔或跑指令；要它去查新的東西，改用 subagent。</li><li><strong>大量閱讀，交給 subagent。</strong> 在要求前面加一句：<code>Use subagents to investigate how our authentication system handles token refresh, and whether we have any existing OAuth utilities I should reuse.</code> subagent 在自己獨立的 context window 裡讀檔，讀完只把摘要帶回來，主對話留給真正要改的部分。調查前先限定範圍，否則 Claude 可能讀上百個檔案把 context 塞滿，官方把這叫作無止境的探索。</li><li><strong>一件事一個對話，並且命名。</strong> 工作會橫跨好幾天時，用 <code>/rename oauth-migration</code> 取個看得懂的名字。隔天用 <code>claude --continue</code> 接回最近一個對話，或 <code>claude --resume</code> 開選單挑。官方的比喻是把每個名字當成一條分支：每條工作線有自己持續的 context。</li></ul>
 <p>壓縮之後，哪些東西還在？<a href="https://code.claude.com/docs/en/context-window" target="_blank" rel="noopener noreferrer">context-window 頁</a>有一張完整的表，整理成下圖：</p>
 <figure class="section-figure"><picture><source media="(max-width: 640px)" srcset="images/web/fig5_9x16.webp"><img src="images/web/fig5_16x9.webp" alt="壓縮之後各類內容的去向：重新注入、按需載入、有上限、只剩摘要" loading="lazy" tabindex="0" role="button" aria-label="放大圖片：壓縮之後各類內容的去向：重新注入、按需載入、有上限、只剩摘要"></picture><figcaption>壓縮之後，什麼還在。</figcaption></figure>
-<p>兩個上限的細節：讀過或改過的檔案，最多重讀 5 個，挑最近改過的，超過 5,000 tokens 的只留路徑；叫用過的 skill，每個上限 5,000 tokens，合計 25,000，最舊的先被丟掉。</p>
+<p>兩個上限的細節：讀過或改過的檔案，最多重讀 5 個，挑最近改過的，超過 5,000 tokens 的只留路徑；呼叫過的 skill，每個上限 5,000 tokens，合計 25,000，最舊的先被丟掉。</p>
 <h3>常見踩坑</h3>
 <p><strong>以為要靠「壓縮指示」才保得住 CLAUDE.md。</strong> 官方確實說可以在 CLAUDE.md 寫像 <code>When compacting, always preserve the full list of modified files and any test commands</code> 這樣的指示，來引導摘要保留什麼。不過從上表看，專案根目錄的 CLAUDE.md 本來就會在壓縮後從磁碟重新注入；真正會在壓縮裡消失的是只在對話中講過的指示，以及按需載入的子目錄規則。必須撐過壓縮的規則，拿掉 <code>paths:</code> 或放進根目錄 CLAUDE.md。</p>
 <p><strong>把重要指示放在 skill 的後面。</strong> 超過上限的 skill 在壓縮後會被截斷，截斷是保留開頭，所以最重要的指令要寫在 <code>SKILL.md</code> 的最前面。</p>
@@ -260,7 +261,7 @@ Analyze and fix the GitHub issue: $ARGUMENTS.
 <pre class="code" tabindex="0"><code>Write a hook that runs eslint after every file edit
 Write a hook that blocks writes to the migrations folder</code></pre>
 <p>它會幫你把設定寫好；想手動改就編輯 <code>.claude/settings.json</code>，輸入 <code>/hooks</code> 可以瀏覽目前有哪些。</p>
-<p><strong>踩坑</strong>：EP431 影片把 hook 形容成「固定時間點一定會跑、沒有例外」。方向沒錯，官方文件的細節更多：hook 以結束碼 2 表示阻擋；以其他碼結束，或根本沒啟動、輸出了無效的 JSON，都算「非阻擋錯誤」，動作照常進行（把該 hook 的 <code>onFailure</code> 設成 <code>&quot;block&quot;</code>，失敗就會等同結束碼 2 的阻擋；這個欄位需要 Claude Code v2.1.295 以上）。在 <code>PostToolUse</code> 這類事件上，工具已經執行完了，阻擋也無法復原。另外，設定 <code>&quot;disableAllHooks&quot;: true</code> 就能關閉全部 hook。把「一定要攔住」的規則寫成 hook 時，要實際測過它會攔。</p>
+<p><strong>踩坑</strong>：EP431 影片把 hook 形容成「固定時間點一定會跑、沒有例外」。方向沒錯，官方文件的細節更多：hook 以結束碼 2 表示阻擋；以其他碼結束，或根本沒啟動、輸出了無效的 JSON，都算「不會擋下動作的錯誤」（官方稱 non-blocking error），動作照常進行（把該 hook 的 <code>onFailure</code> 設成 <code>&quot;block&quot;</code>，失敗就會等同結束碼 2 的阻擋；這個欄位需要 Claude Code v2.1.295 以上）。在 <code>PostToolUse</code> 這類事件上，工具已經執行完了，阻擋也無法復原。另外，設定 <code>&quot;disableAllHooks&quot;: true</code> 就能關閉全部 hook。把「一定要攔住」的規則寫成 hook 時，要實際測過它會攔。</p>
 <h3>Subagent：把研究或審查交給另一個 context</h3>
 <p>第五章講過用 subagent 查資料。你也可以在 <code>.claude/agents/</code> 底下定義常用的角色，例如官方範例的資安審查員：</p>
 <pre class="code" tabindex="0"><code>---
@@ -305,7 +306,7 @@ done</code></pre>
 <p>這六章其實反覆在處理兩件事。第一件是 context 這項稀缺資源：常 <code>/clear</code>、大量閱讀丟給 subagent、要撐過壓縮的規則放根目錄 CLAUDE.md。第二件是驗證：只要讓檢查自己跑、自己判斷、自己把證據交出來，你就從盯著它的人，變成看證據的人。</p>
 <p>官方在結尾也留了一段話：這些模式是通用的起點，並不適合每個情境。有時你正深入一個複雜問題，歷史很有價值，那就讓 context 累積；有時任務本身是探索性的，跳過計畫也沒問題；有時一個含糊的 prompt 恰恰合適，因為你想先看看 Claude 怎麼詮釋問題。請留意什麼情況下效果好，什麼情況下效果差，久了你會有一種任何指南都寫不出來的直覺。</p>
 <h2 id="sec-8">我自己多做的幾招</h2>
-<p>前面的方法我大多照著用，另外有幾招是用久了自己長出來的，放在這裡分享。這一節是我的個人做法，不屬於官方文件或影片的內容。</p>
+<p>前面的方法我大多照著用，另外有幾招是用久了自己長出來的，放在這裡分享，都是進階做法。這一節是我的個人做法，不屬於官方文件或影片的內容。</p>
 <h3>先驗「檢查本身」</h3>
 <p>第三章說要給 Claude 能跑的檢查。我多加一步：寫進驗收條件的指令，先對一個一定會出錯的輸入跑一次，確認它真的會失敗，再對正確的輸入跑一次，確認會通過。</p>
 <p>這條是被空指令騙過兩次才加的。<code>python3 -m html.parser 檔案</code> 對任何檔案（連不存在的都算）都回傳 exit 0、沒有輸出，我卻兩次把它當成「跑過語法檢查」。現在驗收指令一律先拿壞輸入試一遍，會失敗才拿來用。本篇的指令與旗標核對也是這樣做的：腳本先用捏造的指令測過會報錯，才拿去比對官方文件。</p>
@@ -315,7 +316,7 @@ done</code></pre>
 <p>第二章建議 Sonnet 處理大部分工作、複雜架構再換 Opus。我把它寫成更具體的規則：一般研究與實作用 sonnet，機械式批次改檔用 haiku，架構規劃用 opus；同一個子任務 sonnet 錯兩次才升級到 opus，而且派 opus 時要附上前兩次的失敗紀錄，它才不會從頭重犯一次。</p>
 <h3>讀完這份指南之後，我改的三件事</h3>
 <ul><li><strong>CLAUDE.md 從 638 行瘦到 101 行。</strong> 官方建議每份控制在 200 行內，太長會佔用 context，也降低 Claude 遵守的程度。我把版本史與細節搬到其他文件，只留指令、陷阱與慣例，原文留備份。</li><li><strong><code>/goal</code> 條件用模板寫。</strong> 評估器只看對話內容，所以條件要有可量測的終點、證明方式和輪數上限，例如：「修好 <code>tests/test_parser.py</code>。完成的定義：執行 <code>pytest tests/test_parser.py -v</code> 並貼出輸出，0 failed；<code>git diff</code> 只動 <code>src/parser.py</code>。超過 20 輪就停下來回報。」我以前常寫「開始實作，直到完成」，評估器沒有東西可比對，只能相信 Claude 自己說做完了。</li><li><strong>加一個自己開啟的 Stop 驗證關卡。</strong> 專案放一個 <code>.stop-gate</code> 檔，第一行寫驗證指令，沒通過就不讓 Claude 結束。它刻意不看 <code>stop_hook_active</code>，改用自己的計數，連續擋 5 次才放行：照第三章的寫法每次停止嘗試只擋一次，而官方的 8 次計數又會在 Claude 每次呼叫工具時歸零，兩邊都不好用。</li></ul>
-<p>做的時候踩到一個坑：<a href="https://code.claude.com/docs/en/hooks" target="_blank" rel="noopener noreferrer">Hooks reference</a> 寫明，Stop hook 以 exit 2 結束時，只要 stdout 是空的、stderr 又顯示檔案不存在（例如 <code>No such file or directory</code>），就會被當成非阻擋錯誤放行。驗證指令失敗時常剛好印出這句，我用 <code>ls</code> 一個不存在的檔案重現過。改成腳本 exit 0、輸出 JSON 決策（<code>{&quot;decision&quot;:&quot;block&quot;, ...}</code>）之後才擋得住。這個關卡剛改好，還沒長期用過。python3 不存在，或驗證指令超過 hook 的 150 秒逾時，都等於放行；要把結果當完成證據，仍要在 <code>/goal</code> 條件裡要求貼出指令輸出。</p>
+<p>做的時候踩到一個坑：<a href="https://code.claude.com/docs/en/hooks" target="_blank" rel="noopener noreferrer">Hooks reference</a> 寫明，Stop hook 以 exit 2 結束時，只要 stdout 是空的、stderr 又顯示檔案不存在（例如 <code>No such file or directory</code>），就會被當成不會擋下動作的錯誤而放行。驗證指令失敗時常剛好印出這句，我用 <code>ls</code> 一個不存在的檔案重現過。改成腳本 exit 0、輸出 JSON 決策（<code>{&quot;decision&quot;:&quot;block&quot;, ...}</code>）之後才擋得住。這個關卡剛改好，還沒長期用過。python3 不存在，或驗證指令超過 hook 的 150 秒逾時，都等於放行；要把結果當完成證據，仍要在 <code>/goal</code> 條件裡要求貼出指令輸出。</p>
 <h2 id="sec-9">來源清單</h2>
 <p>以下官方文件皆於 2026-10-18 讀取；版本門檻（如 v2.1.283）以文件當日內容為準。</p>
 <p><strong>官方文件（Anthropic，code.claude.com）</strong></p>

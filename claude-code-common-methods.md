@@ -16,7 +16,11 @@ sources:
 
 ![](images/web/hero_16x9.webp)
 
-官方 [Best practices](https://code.claude.com/docs/en/best-practices) 開頭就點明：大部分建議都來自同一個限制，Claude 的 context window 會很快填滿，而且越滿，表現越差。一次除錯或一次程式庫探索，就可能吃掉數萬個 token。context 裡裝著整段對話、每個讀過的檔案、每次指令的輸出，滿了以後 Claude 會開始「忘記」前面的指示，錯誤也變多。
+官方 [Best practices](https://code.claude.com/docs/en/best-practices) 開頭就點明：大部分建議都來自同一個限制，Claude 的 context window 會很快填滿，而且越滿，表現越差。一次除錯或一次程式庫探索，就可能吃掉數萬個 token。context window 可以想成 Claude 一次看得到的全部內容：你說過的話、每個讀過的檔案、每次指令的輸出，都塞在裡面。容量有限，滿了以後 Claude 會開始「忘記」前面的指示，錯誤也變多。token 是計算這個容量的單位。
+
+![context window 像一個會被慢慢裝滿的容器：還有空間時回答穩定，快滿了就容易漏規則、重複犯錯](images/web/fig7_16x9.webp)
+
+*context window 像一個會被慢慢裝滿的容器。*
 
 這句話解釋了不少日常現象：聊久了它變笨、同一個錯糾正三次還是錯、規則寫了它偏偏漏掉一條。官方最佳實踐的第一節還有另一個提示：給 Claude 一個它自己能跑的檢查，你就不必一直盯著它。
 
@@ -244,7 +248,7 @@ Claude 做到一半，你發現方向不對；或它已經改壞了；或同一�
 
 先看現況。`/context` 會用分類的方式顯示目前用量，並給出最佳化建議，包括哪些 CLAUDE.md 與 auto memory 檔案有載入。再決定怎麼收。
 
-- **換一件不相關的事之前，`/clear`。** 官方把「一個 session 裡做 A、順口問 B、再回去做 A」叫作廚房水槽式的 session，context 裡塞滿用不到的東西。
+- **換一件不相關的事之前，`/clear`。** 官方把「一個 session 裡做 A、順口問 B、再回去做 A」叫作 kitchen sink session，也就是什麼都往裡塞的 session，context 裡塞滿用不到的東西。
 - **快滿時，自己決定留什麼。** Claude Code 接近上限時會自動壓縮，你也可以先出手：`/compact focus on the API changes`，摘要就會保留你指定的重點。要壓縮一半，用 `/rewind` 選一則訊息，再選 Summarize from here 或 Summarize up to here。想調整自動壓縮的時機，用 `/autocompact 500k` 這類寫法設定 context 填到多滿才觸發；這個值會存進 user settings，之後所有專案都生效。
 - **問小事，用 `/btw`。** 例如 `/btw what was the name of that config file again?`。這一問一答不會進入對話歷史，所以不佔空間；Claude 還在工作時也能問，且不會打斷它。它沒有任何工具，只能回答對話裡已經有的東西，不能讀檔或跑指令；要它去查新的東西，改用 subagent。
 - **大量閱讀，交給 subagent。** 在要求前面加一句：`Use subagents to investigate how our authentication system handles token refresh, and whether we have any existing OAuth utilities I should reuse.` subagent 在自己獨立的 context window 裡讀檔，讀完只把摘要帶回來，主對話留給真正要改的部分。調查前先限定範圍，否則 Claude 可能讀上百個檔案把 context 塞滿，官方把這叫作無止境的探索。
@@ -257,7 +261,7 @@ Claude 做到一半，你發現方向不對；或它已經改壞了；或同一�
 
 *壓縮之後，什麼還在。*
 
-兩個上限的細節：讀過或改過的檔案，最多重讀 5 個，挑最近改過的，超過 5,000 tokens 的只留路徑；叫用過的 skill，每個上限 5,000 tokens，合計 25,000，最舊的先被丟掉。
+兩個上限的細節：讀過或改過的檔案，最多重讀 5 個，挑最近改過的，超過 5,000 tokens 的只留路徑；呼叫過的 skill，每個上限 5,000 tokens，合計 25,000，最舊的先被丟掉。
 
 ### 常見踩坑
 
@@ -324,7 +328,7 @@ Write a hook that blocks writes to the migrations folder
 
 它會幫你把設定寫好；想手動改就編輯 `.claude/settings.json`，輸入 `/hooks` 可以瀏覽目前有哪些。
 
-**踩坑**：EP431 影片把 hook 形容成「固定時間點一定會跑、沒有例外」。方向沒錯，官方文件的細節更多：hook 以結束碼 2 表示阻擋；以其他碼結束，或根本沒啟動、輸出了無效的 JSON，都算「非阻擋錯誤」，動作照常進行（把該 hook 的 `onFailure` 設成 `"block"`，失敗就會等同結束碼 2 的阻擋；這個欄位需要 Claude Code v2.1.295 以上）。在 `PostToolUse` 這類事件上，工具已經執行完了，阻擋也無法復原。另外，設定 `"disableAllHooks": true` 就能關閉全部 hook。把「一定要攔住」的規則寫成 hook 時，要實際測過它會攔。
+**踩坑**：EP431 影片把 hook 形容成「固定時間點一定會跑、沒有例外」。方向沒錯，官方文件的細節更多：hook 以結束碼 2 表示阻擋；以其他碼結束，或根本沒啟動、輸出了無效的 JSON，都算「不會擋下動作的錯誤」（官方稱 non-blocking error），動作照常進行（把該 hook 的 `onFailure` 設成 `"block"`，失敗就會等同結束碼 2 的阻擋；這個欄位需要 Claude Code v2.1.295 以上）。在 `PostToolUse` 這類事件上，工具已經執行完了，阻擋也無法復原。另外，設定 `"disableAllHooks": true` 就能關閉全部 hook。把「一定要攔住」的規則寫成 hook 時，要實際測過它會攔。
 
 ### Subagent：把研究或審查交給另一個 context
 
@@ -416,7 +420,7 @@ done
 
 ## 我自己多做的幾招
 
-前面的方法我大多照著用，另外有幾招是用久了自己長出來的，放在這裡分享。這一節是我的個人做法，不屬於官方文件或影片的內容。
+前面的方法我大多照著用，另外有幾招是用久了自己長出來的，放在這裡分享，都是進階做法。這一節是我的個人做法，不屬於官方文件或影片的內容。
 
 ### 先驗「檢查本身」
 
@@ -438,7 +442,7 @@ done
 - **`/goal` 條件用模板寫。** 評估器只看對話內容，所以條件要有可量測的終點、證明方式和輪數上限，例如：「修好 `tests/test_parser.py`。完成的定義：執行 `pytest tests/test_parser.py -v` 並貼出輸出，0 failed；`git diff` 只動 `src/parser.py`。超過 20 輪就停下來回報。」我以前常寫「開始實作，直到完成」，評估器沒有東西可比對，只能相信 Claude 自己說做完了。
 - **加一個自己開啟的 Stop 驗證關卡。** 專案放一個 `.stop-gate` 檔，第一行寫驗證指令，沒通過就不讓 Claude 結束。它刻意不看 `stop_hook_active`，改用自己的計數，連續擋 5 次才放行：照第三章的寫法每次停止嘗試只擋一次，而官方的 8 次計數又會在 Claude 每次呼叫工具時歸零，兩邊都不好用。
 
-  做的時候踩到一個坑：[Hooks reference](https://code.claude.com/docs/en/hooks) 寫明，Stop hook 以 exit 2 結束時，只要 stdout 是空的、stderr 又顯示檔案不存在（例如 `No such file or directory`），就會被當成非阻擋錯誤放行。驗證指令失敗時常剛好印出這句，我用 `ls` 一個不存在的檔案重現過。改成腳本 exit 0、輸出 JSON 決策（`{"decision":"block", ...}`）之後才擋得住。這個關卡剛改好，還沒長期用過。python3 不存在，或驗證指令超過 hook 的 150 秒逾時，都等於放行；要把結果當完成證據，仍要在 `/goal` 條件裡要求貼出指令輸出。
+  做的時候踩到一個坑：[Hooks reference](https://code.claude.com/docs/en/hooks) 寫明，Stop hook 以 exit 2 結束時，只要 stdout 是空的、stderr 又顯示檔案不存在（例如 `No such file or directory`），就會被當成不會擋下動作的錯誤而放行。驗證指令失敗時常剛好印出這句，我用 `ls` 一個不存在的檔案重現過。改成腳本 exit 0、輸出 JSON 決策（`{"decision":"block", ...}`）之後才擋得住。這個關卡剛改好，還沒長期用過。python3 不存在，或驗證指令超過 hook 的 150 秒逾時，都等於放行；要把結果當完成證據，仍要在 `/goal` 條件裡要求貼出指令輸出。
 
 ## 來源清單
 
